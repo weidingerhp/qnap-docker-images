@@ -1,0 +1,25 @@
+FROM arm32v7/ubuntu:bionic
+
+RUN apt-get update; \
+    apt-get upgrade -y
+RUN apt-get install -y samba cups cups-pdf cups-client cups-filters bash hplip hplip-ppds hplip-data
+#add samsung and epson drivers
+RUN apt-get install -y printer-driver-splix printer-driver-escpr 
+#also enable ssh access
+RUN apt-get install -y openssh-server
+
+COPY printserver-scripts/startprintserver.sh /opt/
+COPY printserver-scripts/smb.conf /etc/samba/smb.conf
+COPY printserver-scripts/cupsd.conf /etc/cups/cupsd.conf
+#RUN service cups start
+#
+#RUN cupsctl --remote-admin
+#RUN cupsctl --share-printers
+#RUN cupsctl --remote-any
+
+EXPOSE 22 137/udp 138/udp 139 445 631 9100 9500 8080
+
+HEALTHCHECK --interval=60s --timeout=15s \
+            CMD smbclient -L \\localhost -U % -m SMB3
+
+ENTRYPOINT ["/bin/bash", "/opt/startprintserver.sh"]
